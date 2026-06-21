@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  echofy:
+    build: .
+    container_name: echofy
+    restart: unless-stopped
+    ports:
+      - "3045:3045"
+    env_file:
+      - .env
+    volumes:
+      - ./downloads:/app/downloads
+    environment:
+      - NODE_ENV=production
+      - PUPPETEER_ARGS=--no-sandbox,--disable-setuid-sandbox
+    shm_size: '256mb'
+    deploy:
+      resources:
+        limits:
+          memory: 1.5G
+        reservations:
+          memory: 512M

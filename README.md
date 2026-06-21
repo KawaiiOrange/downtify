@@ -1,12 +1,10 @@
-# 🚀 Downtify (Frontend) — forked proxy UI
+# 🚀 Echofy (Frontend) — forked proxy UI
 
-*Downtify* <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/7cd717e7-bfd8-4b98-b8be-9c04d4e0b490" />
+*Echofy* 
 
+> Echofy is the graphical/automation piece (frontend + server-side automation) of a Spotidown-based downloader. This repository is a fork of the original Spotidown project — **this API is a fork**.
 
-
-> Downtify is the graphical/automation piece (frontend + server-side automation) of a Spotidown-based downloader. This repository is a fork of the original Spotidown project — **this API is a fork**.
-
-⚠️ **Warning:** Downtify automates web scraping and downloads MP3 files. Downloading copyrighted material may be illegal in your jurisdiction. Use responsibly and at your own risk.
+⚠️ **Warning:** Echofy automates web scraping and downloads MP3 files. Downloading copyrighted material may be illegal in your jurisdiction. Use responsibly and at your own risk.
 
 ---
 
@@ -22,9 +20,9 @@ Libraries and projects used:
 
 ---
 
-## 🎯 What Downtify is
+## 🎯 What Echofy is
 
-Downtify is a Bun/TypeScript-based proxy UI and automation layer that controls a headless Chromium instance (via Puppeteer) to drive the Spotidown frontend and resolve direct MP3 download URLs for Spotify tracks. It provides a small Express API for programmatic access and server-side playlist downloads.
+Echofy is a Bun/TypeScript-based proxy UI and automation layer that controls a headless Chromium instance (via Puppeteer) to drive the Spotidown frontend and resolve direct MP3 download URLs for Spotify tracks. It provides a small Express API for programmatic access and server-side playlist downloads.
 
 This repository represents the graphical/automation portion (the UI + automation) and not the original upstream project.
 
@@ -34,161 +32,276 @@ This repository represents the graphical/automation portion (the UI + automation
 
 You need the following installed / available:
 
-- Bun (v1.0+) — recommended runtime (runs TypeScript directly and includes fetch)
-- Node.js (v18+) — required only if running under Node instead of Bun, and for Puppeteer compatibility
+- **Docker + Docker Compose** (Recommended - works everywhere)
+- Or: Bun (v1.0+) + Node.js (v18+)
 - Puppeteer — headless Chromium automation used to interact with spotidown.app
 
 Notes about Spotify integration:
-- spotify-web-api-node is optional. Downtify runs without it.
-- CLIENT_ID and CLIENT_SECRET are optional: when provided, Downtify will use Spotify's client credentials flow to fetch richer metadata (and enable ISRC lookup). When not provided, Downtify falls back to scraping Spotify embed pages for metadata and still performs downloads via the Spotidown scraping flow.
+- spotify-web-api-node is optional. Echofy runs without it.
+- CLIENT_ID and CLIENT_SECRET are optional: when provided, Echofy will use Spotify's client credentials flow to fetch richer metadata (and enable ISRC lookup). When not provided, Echofy falls back to scraping Spotify embed pages for metadata and still performs downloads via the Spotidown scraping flow.
 
 ---
 
-## 🔌 Quick overview of endpoints
+## 🐳 Docker (Recommended - Works Everywhere)
 
-- `GET /` -> status and endpoints listing
-- `GET /track/:id` -> returns MP3 (attachment) for Spotify track id
-- `POST /track/url` -> body: `{ url }` -> returns metadata + download endpoint
-- `GET /track/:id/info` -> track metadata (Spotify API preferred, embed fallback)
-- `GET /isrc/:isrc` -> search Spotify by ISRC and return download (best with credentials; otherwise limited)
-- `GET /playlist/:id` -> playlist metadata + list of tracks
-- `POST /playlist/download-all` -> body: `{ url, jobId? }` -> downloads tracks to `downloads/<playlist>/` on the server
-- `GET /playlist/zip/progress/:jobId` -> SSE progress updates for playlist jobs
+### Quick Start
 
-> Important: When you download a playlist via `/playlist/download-all`, all MP3 files are saved to the project's `downloads/<sanitized-playlist-name>/` folder on disk — even if the client progress bar does not show each file save. Always check the `downloads/` directory for the saved files.
+```bash
+git clone https://github.com/KawaiiOrange/Echofy.git
+cd Echofy
+docker-compose up -d
+```
+
+Open: **http://localhost:3045**
+
+Downloads saved to: `./downloads/`
+
+### Commands
+
+```bash
+# View logs
+docker-compose logs -f echofy
+
+# Stop
+docker-compose down
+
+# Restart
+docker-compose restart
+
+# Clean everything
+docker system prune -a --volumes -f
+```
+
+---
+
+## 🏠 Multiple Containers (Casa + Outros Sistemas)
+
+Want to run Echofy on different machines? Use this `docker-compose.yml`:
+
+```yaml
+version: '3.8'
+
+services:
+  # Casa (your home PC)
+  echofy-casa:
+    build: .
+    container_name: echofy-casa
+    restart: unless-stopped
+    ports:
+      - "3045:3045"
+    env_file:
+      - .env.casa
+    volumes:
+      - ./downloads-casa:/app/downloads
+    shm_size: '256mb'
+    environment:
+      - NODE_ENV=production
+      - PUPPETEER_ARGS=--no-sandbox,--disable-setuid-sandbox
+
+  # Outro sistema
+  echofy-outros:
+    build: .
+    container_name: echofy-outros
+    restart: unless-stopped
+    ports:
+      - "3046:3045"
+    env_file:
+      - .env.outros
+    volumes:
+      - ./downloads-outros:/app/downloads
+    shm_size: '256mb'
+    environment:
+      - NODE_ENV=production
+      - PUPPETEER_ARGS=--no-sandbox,--disable-setuid-sandbox
+```
+
+**Usage:**
+```bash
+docker-compose up -d
+
+# Casa: http://localhost:3045 (downloads in ./downloads-casa/)
+# Outros: http://localhost:3046 (downloads in ./downloads-outros/)
+```
+
+---
+
+## 📁 File Structure for Docker
+
+```
+Echofy/
+├── Dockerfile
+├── docker-compose.yml
+├── .dockerignore
+├── index.ts
+├── index.html
+├── styles.css
+├── script.js
+├── package.json
+├── bun.lockb
+├── tsconfig.json
+├── .env.example
+├── .gitignore
+└── downloads/  (created automatically)
+```
+
+---
+
+## 🔌 API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/` | UI (index.html) |
+| GET | `/track/:id` | Download MP3 by track ID |
+| POST | `/track/url` | Get metadata from Spotify URL |
+| GET | `/track/:id/info` | Get track info (Spotify API or embed) |
+| GET | `/isrc/:isrc` | Search by ISRC code |
+| GET | `/playlist/:id` | Get playlist tracks |
+| POST | `/playlist/download-all` | Download entire playlist |
+| GET | `/playlist/zip/progress/:jobId` | SSE progress updates |
+
+> Important: When you download a playlist via `/playlist/download-all`, all MP3 files are saved to the project's `downloads/<sanitized-playlist-name>/` folder on disk. Always check the `downloads/` directory for the saved files.
 
 ---
 
 ## 🔁 What changed from the original Spotidown (API changes in this fork)
 
-- Project renamed to **Downtify** and reorganized as a Bun/TypeScript frontend + server automation piece.
-- Exposed an Express HTTP API to allow programmatic downloads and integrations (endpoints listed above).
+- Project renamed to **Echofy** and reorganized as a Bun/TypeScript frontend + server automation piece.
+- Exposed an Express HTTP API to allow programmatic downloads and integrations.
 - Added server-side playlist downloading that saves MP3 files to `downloads/<sanitized-playlist-name>/`.
-- Added optional Server-Sent Events (SSE) progress reporting for playlist downloads using an optional `jobId` (clients can listen on `/playlist/zip/progress/:jobId`).
-- Spotify Web API integration is optional: the server uses Spotify Web API if `CLIENT_ID`/`CLIENT_SECRET` are supplied; otherwise it falls back to scraping Spotify embed pages.
-- Implemented ISRC lookup endpoint which uses the Spotify API when available.
+- Added optional Server-Sent Events (SSE) progress reporting for playlist downloads.
+- Spotify Web API integration is optional: falls back to scraping Spotify embed pages.
+- Implemented ISRC lookup endpoint.
 - Improved filename sanitization and duplicate-filename collision handling.
-- Periodic refresh of the Spotidown page (every 5 minutes) to help keep the Puppeteer session alive.
-- Preserved some Portuguese messages from the forked code (can be standardized on request).
+- Periodic refresh of the Spotidown page (every 15 minutes).
+- **Docker support** — run anywhere with `docker-compose up -d`.
 
 ---
 
 ## ⚠️ Known issues & limitations
 
-1. **Spotify credentials are optional** — `CLIENT_ID`/`CLIENT_SECRET` are optional; without them metadata and ISRC search may be limited, but downloads still work via Spotidown scraping.
-2. **Puppeteer / Chromium launch failures** — provide `executablePath` or run with `--no-sandbox` in containerized environments.
-3. **grecaptcha / reCAPTCHA issues** — if grecaptcha is blocked or page changes, the recaptcha execution can fail and downloads will not resolve.
-4. **Spotidown / Spotify frontend changes** — scraping logic depends on current HTML/JSON structures; upstream changes can break parsing.
-5. **MP3 fetch failures** — resolved MP3 URLs may expire or be blocked.
-6. **Default port & language mixing** — server listens on port `3045` by default and some messages are in Portuguese; consider configuring `PORT` and standardizing messages.
-7. **SSE job cleanup** — jobs are removed shortly after completion; clients reconnecting late may not find job state.
-8. **No `start` script by default** — consider adding `scripts.start` to `package.json` for easier deployment.
+1. **Spotify credentials are optional** — without them metadata and ISRC search may be limited, but downloads still work.
+2. **Puppeteer / Chromium launch failures** — use `--no-sandbox` in containerized environments.
+3. **grecaptcha / reCAPTCHA issues** — if blocked, downloads may fail.
+4. **Spotidown / Spotify frontend changes** — scraping logic depends on HTML/JSON structures.
+5. **MP3 fetch failures** — resolved URLs may expire or be blocked.
+6. **SSE job cleanup** — jobs are removed shortly after completion.
 
 ---
 
 ## ▶️ How to run (super simple)
 
-1. Install dependencies (Bun recommended):
+### With Docker (Recommended)
+
+```bash
+docker-compose up -d
+```
+
+Open: http://localhost:3045
+
+### Without Docker (Local)
+
+1. Install dependencies:
 
 ```bash
 bun install
 ```
 
-2. Start the API server:
+2. Start the server:
 
 ```bash
 bun run index.ts
 ```
 
-3. After the server is running, open the HTML UI in your browser manually (it does NOT open the browser for you — yes, really, you have to open it yourself 👀). Example:
-
-- Open the UI file in your browser or visit `http://localhost:3045` (depending on how your UI is served).
-
-Why it doesn't open the browser automatically? Because it keeps things simple, predictable, and friendly for server environments (and because you asked — "porque sim -_-" 😅).
+3. Open: http://localhost:3045
 
 ---
 
 ## 🛠 Example usage
 
-- Download a single track:
-
+**Download a single track:**
 ```bash
 curl -L http://localhost:3045/track/<TRACK_ID> -o track.mp3
 ```
 
-- Inspect track metadata from a Spotify URL:
-
+**Get track metadata:**
 ```bash
-curl -X POST -H "Content-Type: application/json" -d '{"url":"https://open.spotify.com/track/<TRACK_ID>"}' http://localhost:3045/track/url
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"url":"https://open.spotify.com/track/<TRACK_ID>"}' \
+  http://localhost:3045/track/url
 ```
 
-- Download an entire playlist server-side (files saved to `downloads/`):
-
+**Download entire playlist:**
 ```bash
-curl -X POST -H "Content-Type: application/json" -d '{"url":"https://open.spotify.com/playlist/<ID>", "jobId":"job-1234"}' http://localhost:3045/playlist/download-all
-# then check downloads/<sanitized-playlist-name>/ for mp3 files
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"url":"https://open.spotify.com/playlist/<ID>", "jobId":"job-1234"}' \
+  http://localhost:3045/playlist/download-all
 ```
-## Using the Graphical UI
 
-### Start the API server
+---
+
+## 🎨 Using the Graphical UI
+
+### Start the server
 
 ```bash
 bun run index.ts
+# or with Docker:
+docker-compose up -d
 ```
 
-### Open the UI in your browser (manually)
+### Open in your browser
 
-Open the `index.html` file in your browser or navigate to the UI URL.
+Navigate to: http://localhost:3045
 
-**Important:** the server does NOT open the browser automatically — you must open the UI yourself.
+**Important:** the server does NOT open the browser automatically.
 
-### Use the interface
+### Download Music
 
-In the UI choose one of the actions:
-- Download Track
-- Download Playlist
-- Search Info
-
-Enter the Spotify URL or ID, then click the corresponding button to start the action. The UI calls the API; the server performs the scraping and downloads.
+1. Choose action: **Download Track** or **Download Playlist**
+2. Paste Spotify URL or track ID
+3. Click button to start download
 
 ### Playlist downloads location
 
-Playlist MP3 files are saved on the server under:
-
+Playlist MP3 files are saved to:
 ```
 downloads/<sanitized-playlist-name>/
 ```
 
-Check that folder on the server for the MP3 files even if the UI progress bar does not list every saved file item-by-item.
+### Optional Spotify credentials
 
-### Optional Spotify credentials & progress tracking
-
-Spotify credentials (`CLIENT_ID` / `CLIENT_SECRET`) are optional. If provided, the server will use the Spotify API for richer metadata and ISRC lookup; otherwise it falls back to embed scraping. Downloads still work without credentials.
-
-If you provide a `jobId` for a playlist download, you can receive SSE progress at:
-
+Add to `.env`:
 ```
-GET /playlist/zip/progress/<jobId>
+CLIENT_ID=your_client_id
+CLIENT_SECRET=your_client_secret
 ```
 
-**Note:** SSE reports overall job status and counts but may not show every individual file save.
-
-## Tips & troubleshooting
-
-- Run the server in a terminal you can monitor for logs (Puppeteer, grecaptcha, or Spotidown parsing errors appear there).
-- If downloads fail, check console output for errors — common causes: grecaptcha not available, Spotidown frontend changed, or Puppeteer/Chromium launch issues.
-- If running under Node, use Node 18+ (or Bun) so `fetch` is available; otherwise add a fetch polyfill.
----
-
-## 🎨 Little effects  — README styling & UX
-
-- Added emoji headers and horizontal separators for better scanning.
-- Included an image preview placeholder at `assets/preview.png` to give a visual impression of the UI.
-- Code blocks and inline badges make important commands stand out.
-
-If you want more visual polish I can add:
-- Shields/badges (version, license, bun support)
-- A real hero image/banner and smaller screenshots gallery
-- A table of endpoints with icons
+If not provided, Echofy falls back to embed scraping.
 
 ---
+
+## 🔧 Troubleshooting
+
+- **Downloads failing?** Check server logs for errors (grecaptcha, Spotidown changes, etc)
+- **Docker issues?** Make sure Docker daemon is running
+- **reCAPTCHA blocked?** Try restarting the server
+- **Using Node?** Requires Node 18+ (Bun recommended)
+
+---
+
+## 🎨 Tech Stack
+
+- **Backend**: TypeScript + Express + Bun
+- **Frontend**: HTML + CSS + Vanilla JS + GSAP
+- **Automation**: Puppeteer + Spotidown
+- **Containerization**: Docker + Docker Compose
+
+---
+
+## 📝 License
+
+MIT
+
+---
+
+**Made with ❤️ for music lovers**

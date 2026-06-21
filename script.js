@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════
-   TurboSpot — script.js
+   Echofy — script.js
 ═══════════════════════════════════════════════ */
 
 const API = 'http://localhost:3045';
@@ -13,7 +13,7 @@ if (typeof ScrambleTextPlugin !== 'undefined') {
 const PROJECTS = [
   {
     id: 1,
-    artist:   'TURBOSPOT',
+    artist:   'ECHOFY',
     album:    'DOWNLOAD TRACK',
     category: 'FEATURE',
     label:    'MUSIC DOWNLOADER',
@@ -23,7 +23,7 @@ const PROJECTS = [
   },
   {
     id: 2,
-    artist:   'TURBOSPOT',
+    artist:   'ECHOFY',
     album:    'DOWNLOAD PLAYLIST',
     category: 'FEATURE',
     label:    'MUSIC DOWNLOADER',
@@ -33,7 +33,7 @@ const PROJECTS = [
   },
   {
     id: 3,
-    artist:   'TURBOSPOT',
+    artist:   'ECHOFY',
     album:    'SEARCH INFO',
     category: 'FEATURE',
     label:    'MUSIC DOWNLOADER',
