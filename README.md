@@ -127,10 +127,59 @@ curl -X POST -H "Content-Type: application/json" -d '{"url":"https://open.spotif
 curl -X POST -H "Content-Type: application/json" -d '{"url":"https://open.spotify.com/playlist/<ID>", "jobId":"job-1234"}' http://localhost:3045/playlist/download-all
 # then check downloads/<sanitized-playlist-name>/ for mp3 files
 ```
+## Using the Graphical UI
 
+### Start the API server
+
+```bash
+bun run index.ts
+```
+
+### Open the UI in your browser (manually)
+
+Open the `index.html` file in your browser or navigate to the UI URL.
+
+**Important:** the server does NOT open the browser automatically — you must open the UI yourself.
+
+### Use the interface
+
+In the UI choose one of the actions:
+- Download Track
+- Download Playlist
+- Search Info
+
+Enter the Spotify URL or ID, then click the corresponding button to start the action. The UI calls the API; the server performs the scraping and downloads.
+
+### Playlist downloads location
+
+Playlist MP3 files are saved on the server under:
+
+```
+downloads/<sanitized-playlist-name>/
+```
+
+Check that folder on the server for the MP3 files even if the UI progress bar does not list every saved file item-by-item.
+
+### Optional Spotify credentials & progress tracking
+
+Spotify credentials (`CLIENT_ID` / `CLIENT_SECRET`) are optional. If provided, the server will use the Spotify API for richer metadata and ISRC lookup; otherwise it falls back to embed scraping. Downloads still work without credentials.
+
+If you provide a `jobId` for a playlist download, you can receive SSE progress at:
+
+```
+GET /playlist/zip/progress/<jobId>
+```
+
+**Note:** SSE reports overall job status and counts but may not show every individual file save.
+
+## Tips & troubleshooting
+
+- Run the server in a terminal you can monitor for logs (Puppeteer, grecaptcha, or Spotidown parsing errors appear there).
+- If downloads fail, check console output for errors — common causes: grecaptcha not available, Spotidown frontend changed, or Puppeteer/Chromium launch issues.
+- If running under Node, use Node 18+ (or Bun) so `fetch` is available; otherwise add a fetch polyfill.
 ---
 
-## 🎨 Little effects (efeitinhos) — README styling & UX
+## 🎨 Little effects  — README styling & UX
 
 - Added emoji headers and horizontal separators for better scanning.
 - Included an image preview placeholder at `assets/preview.png` to give a visual impression of the UI.
@@ -142,11 +191,3 @@ If you want more visual polish I can add:
 - A table of endpoints with icons
 
 ---
-
-## ✅ Next actions you can ask me to do now
-
-1. Add the screenshot you sent to `assets/preview.png` and commit it.
-2. Add a `start` script to `package.json` and make `PORT` configurable.
-3. Translate all server messages to English or Portuguese.
-
-Tell me which of the above you want and which branch to commit to (default is `main`).
