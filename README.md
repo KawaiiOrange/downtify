@@ -13,7 +13,7 @@
 - Original Spotidown authors / upstream project (the code this repo was forked from)
 - spotidown.app — original frontend that this project automates
 - spotidown api proxy server - https://github.com/ferrymehdi
-Libraries and projects used:
+      Libraries and projects used:
 - Bun — https://bun.sh/
 - Puppeteer — https://pptr.dev/
 - (Optional) spotify-web-api-node — https://github.com/thelinmichael/spotify-web-api-node
